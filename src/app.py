@@ -30,4 +30,5 @@ def lambda_handler(event, context):
     df = pd.read_excel(tmp_dir + payload.get_filename())
     for row in df.values:
         print(row)
+        print("dummy")
 
