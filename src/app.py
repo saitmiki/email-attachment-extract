@@ -7,28 +7,49 @@ import os
 
 
 tmp_dir = "/tmp/"
+out_dir = "output/"
+bucket_name = "nyk-email-box"
+
+# Reading attachment from email
+def read_attachment(email_list):
+    msg_payload_list = []
+    for email_info in email_list:
+        msg = email.message_from_file(open(tmp_dir + email_info))
+        msg_payload = msg.get_payload()[1]
+        msg_payload_list.append(msg_payload)
+        attachment = msg_payload._payload
+        decoded_data = base64.b64decode(attachment)
+        output_file = open(tmp_dir + msg_payload.get_filename(), 'wb')
+        output_file.write(decoded_data)
+        output_file.close()
+    return msg_payload_list
+
+# Reading excel file and extract
+def read_excel(msg_payload_list):
+    for msg_payload in msg_payload_list:
+        df = pd.read_excel(tmp_dir + msg_payload.get_filename())
+        for row in df.values:
+            print(row)
+
+def main():
+    s3_client = boto3.client("s3")
+    list_objects = s3_client.list_objects(Bucket=bucket_name)
+    contents = list_objects["Contents"]
+    email_list = []
+
+    # Getting file from S3
+    for content in contents:
+        key_id = content["Key"]
+        email_list.append(key_id)
+        s3_client.download_file(Bucket=bucket_name, Key=key_id, Filename=tmp_dir + key_id)
+
+    # Output attachment to tmp
+    msg_payload_list = read_attachment(email_list)
+
+    # Reading excel file
+    read_excel(msg_payload_list)
+
 
 def lambda_handler(event, context):
-
-    # Getting file from S3 Email box
-    s3 = boto3.resource("s3")
-    bucket = s3.Bucket("nyk-email-box")
-    bucket.download_file('kl0orimj1t164dj0v0p212kep8lm92bhclects01', tmp_dir + 'kl0orimj1t164dj0v0p212kep8lm92bhclects01')
-    path = os.path.abspath(tmp_dir + 'kl0orimj1t164dj0v0p212kep8lm92bhclects01')
-
-    # Open email file and get excel attachment
-    msg = email.message_from_file(open(tmp_dir + 'kl0orimj1t164dj0v0p212kep8lm92bhclects01'))
-    payload = msg.get_payload()[1]
-    attachment = payload._payload
-
-    # decoding attachment file and writing to binary file
-    decoded_data = base64.b64decode(attachment)
-    output_file = open(tmp_dir + payload.get_filename(), 'wb')
-    output_file.write(decoded_data)
-    output_file.close()
-
-    df = pd.read_excel(tmp_dir + payload.get_filename())
-    for row in df.values:
-        print(row)
-        print("test")
+    main()
 
