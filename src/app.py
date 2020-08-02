@@ -4,11 +4,18 @@ import base64
 import boto3
 import pandas as pd
 import os
-
+import psycopg2
+from data_base import Database
 
 tmp_dir = "/tmp/"
-out_dir = "output/"
 bucket_name = "nyk-email-box"
+dbname='postgres'
+user='postgres'
+password='Baske5boy'
+host='database-hands.cwe74kypogll.ap-northeast-1.rds.amazonaws.com'
+port='5432'
+
+
 
 # Reading attachment from email
 def read_attachment(email_list):
@@ -26,12 +33,21 @@ def read_attachment(email_list):
 
 # Reading excel file and extract
 def read_excel(msg_payload_list):
+    db = Database(dbname, user, password, host, port)
     for msg_payload in msg_payload_list:
         df = pd.read_excel(tmp_dir + msg_payload.get_filename())
         for row in df.values:
-            print(row)
+            update_excel_to_db(row,db)
+    # Close the connection
+    db.close()
+
+# Update data to Postgres
+def update_excel_to_db(data,db):
+    data_postgres = tuple(data)
+    db.insert('INSERT INTO nyktable (name, value1, value2, value3) VALUES (%s, %s, %s, %s)', data_postgres)
 
 def main():
+    print("main start")
     s3_client = boto3.client("s3")
     list_objects = s3_client.list_objects(Bucket=bucket_name)
     contents = list_objects["Contents"]
