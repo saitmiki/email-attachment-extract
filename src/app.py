@@ -8,11 +8,11 @@ import psycopg2
 from data_base import Database
 
 tmp_dir = "/tmp/"
-bucket_name = "nyk-email-box"
-dbname='postgres'
-user='postgres'
-password='Baske5boy'
-host='database-hands.cwe74kypogll.ap-northeast-1.rds.amazonaws.com'
+bucket_name = "email-box"
+dbname='xxxx'
+user='xxxx'
+password='password'
+host='xxxx.xxxx.ap-northeast-1.rds.amazonaws.com'
 port='5432'
 
 
@@ -44,10 +44,9 @@ def read_excel(msg_payload_list):
 # Update data to Postgres
 def update_excel_to_db(data,db):
     data_postgres = tuple(data)
-    db.insert('INSERT INTO nyktable (name, value1, value2, value3) VALUES (%s, %s, %s, %s)', data_postgres)
+    db.insert('INSERT INTO contenttable (name, value1, value2, value3) VALUES (%s, %s, %s, %s)', data_postgres)
 
 def main():
-    print("main start")
     s3_client = boto3.client("s3")
     list_objects = s3_client.list_objects(Bucket=bucket_name)
     contents = list_objects["Contents"]
